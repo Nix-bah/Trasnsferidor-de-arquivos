@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Transferência de Arquivos</title>
+<style>
+  body { font-family: sans-serif; max-width: 480px; margin: 60px auto; padding: 0 20px; }
+  h2 { margin-top: 40px; }
+  input, button { padding: 10px; width: 100%; margin-top: 10px; box-sizing: border-box; }
+  button { cursor: pointer; }
+  .code { font-size: 24px; font-weight: bold; letter-spacing: 3px; margin-top: 15px; }
+  .msg { margin-top: 15px; color: #444; }
+  a.download-link { display: inline-block; margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<h2>Enviar arquivo</h2>
+<input type="file" id="fileInput">
+<button onclick="uploadFile()">Enviar</button>
+<div class="msg" id="uploadMsg"></div>
+
+<h2>Baixar arquivo</h2>
+<input type="text" id="codeInput" placeholder="Digite o código (ex: X7K9P2)" maxlength="6">
+<button onclick="downloadFile()">Buscar</button>
+<div class="msg" id="downloadMsg"></div>
+
+<script>
+async function uploadFile() {
+  const input = document.getElementById('fileInput');
+  const msg = document.getElementById('uploadMsg');
+  if (!input.files[0]) { msg.textContent = 'Escolha um arquivo primeiro.'; return; }
+
+  const formData = new FormData();
+  formData.append('file', input.files[0]);
+
+  msg.textContent = 'Enviando...';
+  try {
+    const res = await fetch('/upload', { method: 'POST', body: formData });
+    const data = await res.json();
+    if (data.code) {
+      msg.innerHTML = `Código: <span class="code">${data.code}</span><br>Expira em ${data.expiresInMinutes} minutos.`;
+    } else {
+      msg.textContent = data.error || 'Erro ao enviar.';
+    }
+  } catch (e) {
+    msg.textContent = 'Erro de conexão.';
+  }
+}
+
+async function downloadFile() {
+  const code = document.getElementById('codeInput').value.trim();
+  const msg = document.getElementById('downloadMsg');
+  if (!code) { msg.textContent = 'Digite um código.'; return; }
+
+  msg.textContent = 'Buscando...';
+  try {
+    const res = await fetch(`/download/${code}`);
+    const data = await res.json();
+    if (data.downloadUrl) {
+      msg.innerHTML = `Arquivo: ${data.filename}<br><a class="download-link" href="${data.downloadUrl}" target="_blank">Clique para baixar</a>`;
+    } else {
+      msg.textContent = data.error || 'Arquivo não encontrado.';
+    }
+  } catch (e) {
+    msg.textContent = 'Erro de conexão.';
+  }
+}
+</script>
+
+</body>
+</html>
